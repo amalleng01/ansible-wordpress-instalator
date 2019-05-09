@@ -3,6 +3,10 @@
   user: root
   
   tasks:
+          - name: Actualizando...
+            apt:
+                    update_cache: yes
+
           - name: Instalando Apache2, mysql, etc...
             apt:
                     name: "{{ paquete }}"
@@ -69,12 +73,6 @@
                     owner: usuario
                     group: usuario
                     mode: 0777
-
-          - name: Configurando wordpress...
-            lineinfile:
-                    dest: /etc/apache2/sites-enabled/000-default.conf
-                    regexp: "(.)+DocumentRoot /var/www/html"
-                    line: "DocumentRoot /var/www/html/wordpress"
           
           - name: Reiniciando Apache2...
             systemd:
