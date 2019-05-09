@@ -1,0 +1,83 @@
+---
+- hosts: clientes
+  user: root
+  
+  tasks:
+          - name: Instalando Apache2, mysql, etc...
+            apt:
+                    name: "{{ paquete }}"
+                    update_cache: yes
+            vars:
+                    paquete:
+                            - apache2
+                            - mysql-server
+                            - php
+                            - unzip
+                            - php-mysql
+                            - python3
+                            - python2.7
+                            - python-mysqldb
+                            
+          - name: Creando base de datos mysql 
+            mysql_db:
+                    name: wordpress
+                    state: present
+                  
+
+          - name: Creando usuario en la base de datos mysql_wordpress
+            mysql_user:
+                    name: usuario
+                    password: usuario
+                    priv: '*.*:ALL'
+                    state: present
+
+          - name: Descargando wordpress...
+            get_url:
+                    url: https://wordpress.org/latest.tar.gz
+                    dest: /var/www/html/wordpress.tar.gz
+                    validate_certs: no
+      
+
+          - name: Descompriendo wordpress en /var/www/html...
+            unarchive:
+                    src: /var/www/html/wordpress.tar.gz
+                    dest: /var/www/html
+                    copy: no
+
+
+          - name: Creando archivos...
+            copy:
+                    src: /home/usuario/wp-config.php
+                    dest: /var/www/html/wordpress
+                    mode: 0777
+
+          - name: Eliminando wordpress.tar.gz...
+            file:
+                    path: /var/www/html/wordpress.tar.gz
+                    state: absent
+
+
+          - name: Eliminando index.html...
+            file:
+                    path: /var/www/html/index.html
+                    state: absent
+
+          - name: Dando privilegios a la carpeta wordpress...
+            file:
+                    path: /var/www/html/wordpress
+                    state: directory
+                    owner: usuario
+                    group: usuario
+                    mode: 0777
+
+          - name: Configurando wordpress...
+            lineinfile:
+                    dest: /etc/apache2/sites-enabled/000-default.conf
+                    regexp: "(.)+DocumentRoot /var/www/html"
+                    line: "DocumentRoot /var/www/html/wordpress"
+          
+          - name: Reiniciando Apache2...
+            systemd:
+                    name: apache2
+                    state: restarted
+                    
