@@ -1,0 +1,101 @@
+---
+- hosts: clientes
+  user: root
+  
+  tasks:
+          - name: Actualizando...
+            apt:
+                    update_cache: yes
+
+          - name: Instalando Apache2, mysql, etc...
+            apt:
+                    name: "{{ paquete }}"
+                    update_cache: yes
+            vars:
+                    paquete:
+                            - apache2
+                            - mysql-server
+                            - php
+                            - unzip
+                            - php-mysql
+                            - python3
+                            - python2.7
+                            - python-mysqldb
+                            - php-curl
+                            - php-gd
+                            - php-curl
+                            - php-mbstring
+                            - php-xml
+                            - php-xmlrpc
+                            
+          - name: Creando base de datos mysql 
+            mysql_db:
+                    name: wordpress
+                    state: present
+                  
+
+          - name: Creando usuario en la base de datos mysql_wordpress
+            mysql_user:
+                    name: usuario
+                    password: usuario
+                    priv: '*.*:ALL'
+                    state: present
+
+          - name: Descargando wordpress...
+            get_url:
+                    url: https://wordpress.org/latest.tar.gz
+                    dest: /var/www/wordpress.tar.gz
+                    validate_certs: no
+      
+
+          - name: Descompriendo wordpress en /var/www...
+            unarchive:
+                    src: /var/www/wordpress.tar.gz
+                    dest: /var/www/
+                    copy: no
+
+
+          - name: Eliminando wordpress.tar.gz...
+            file:
+                    path: /var/www/wordpress.tar.gz
+                    state: absent
+
+
+          - name: Dando privilegios a la carpeta wordpress...
+            file:
+                    path: /var/www/wordpress/
+                    state: directory
+                    owner: www-data
+                    group: www-data
+                    mode: 0777
+          
+
+          - name: Activar rewrite
+            apache2_module:
+                    name: rewrite
+                    state: present
+
+          - name: Enviando fichero de configuración del Virtual Host...
+            copy:
+                    src: /etc/apache2/sites-available/010-wordpress.conf
+                    dest: /etc/apache2/sites-available/010-wordpress.conf
+
+          - name: Desactivar 000-default.conf...
+            file:
+                    path: /etc/apache2/sites-enabled/000-default.conf
+                    state: absent
+                    
+
+          - name: Activar 010-wordpress.conf...
+            file:
+                    src: /etc/apache2/sites-available/010-wordpress.conf
+                    dest: /etc/apache2/sites-enabled/010-wordpress.conf
+                    state: link
+
+   
+          - name: Reiniciando Apache2...
+            systemd:
+                    name: apache2
+                    state: restarted
+                   
+
