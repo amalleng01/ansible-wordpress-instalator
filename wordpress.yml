@@ -47,14 +47,6 @@
                     - privilages
       
 
-          - name: unzip wordpress in /var/www...
-            unarchive:
-                    src: /var/www/wordpress.tar.gz
-                    dest: /var/www/
-                    copy: no
-            notify:
-                    - downloading wordpress
-                    - privilages
 
 
                     #- name: Eliminando wordpress.tar.gz...
