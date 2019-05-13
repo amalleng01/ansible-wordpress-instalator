@@ -3,11 +3,7 @@
   user: root
   
   tasks:
-          - name: Actualizando...
-            apt:
-                    update_cache: yes
-
-          - name: Instalando Apache2, mysql, etc...
+          - name: installing Apache2, mysql, etc
             apt:
                     name: "{{ paquete }}"
                     update_cache: yes
@@ -28,74 +24,113 @@
                             - php-xml
                             - php-xmlrpc
                             
-          - name: Creando base de datos mysql 
+          - name: creating mysql db 
             mysql_db:
                     name: wordpress
                     state: present
                   
 
-          - name: Creando usuario en la base de datos mysql_wordpress
+          - name: creating user in mysql db
             mysql_user:
                     name: usuario
                     password: usuario
                     priv: '*.*:ALL'
                     state: present
 
-          - name: Descargando wordpress...
+          - name: downloading wordpress
             get_url:
                     url: https://wordpress.org/latest.tar.gz
                     dest: /var/www/wordpress.tar.gz
                     validate_certs: no
+            notify:
+                    - unzip wordpress
+                    - privilages
       
 
-          - name: Descompriendo wordpress en /var/www...
+          - name: unzip wordpress in /var/www...
             unarchive:
                     src: /var/www/wordpress.tar.gz
                     dest: /var/www/
                     copy: no
+            notify:
+                    - downloading wordpress
+                    - privilages
 
 
-          - name: Eliminando wordpress.tar.gz...
-            file:
-                    path: /var/www/wordpress.tar.gz
-                    state: absent
+                    #- name: Eliminando wordpress.tar.gz...
+                    #file:
+                    #path: /var/www/wordpress.tar.gz
+                    #state: absent
 
 
-          - name: Dando privilegios a la carpeta wordpress...
-            file:
-                    path: /var/www/wordpress/
-                    state: directory
-                    owner: www-data
-                    group: www-data
-                    mode: 0777
+
+                      # - name: Dando privilegios a la carpeta wordpress
+                      # file:
+                      #path: /var/www/wordpress/
+                      # state: directory
+                      #owner: www-data
+                      #group: www-data
+                      #mode: 0777
           
 
           - name: Activar rewrite
             apache2_module:
                     name: rewrite
                     state: present
+            notify:
+                    - restart apache2
 
-          - name: Enviando fichero de configuración del Virtual Host...
+
+          - name: Enviando fichero de configuración del Virtual Host
             copy:
-                    src: /etc/apache2/sites-available/010-wordpress.conf
+                    src: /home/usuario/010-wordpress.conf
                     dest: /etc/apache2/sites-available/010-wordpress.conf
 
-          - name: Desactivar 000-default.conf...
+          - name: Desactivar 000-default.conf
             file:
                     path: /etc/apache2/sites-enabled/000-default.conf
                     state: absent
-                    
+            notify:
+                    - restart apache2
 
-          - name: Activar 010-wordpress.conf...
+                    
+          - name: Activar 010-wordpress.conf
             file:
                     src: /etc/apache2/sites-available/010-wordpress.conf
                     dest: /etc/apache2/sites-enabled/010-wordpress.conf
                     state: link
+            notify:
+                    - restart apache2
 
-   
-          - name: Reiniciando Apache2...
+
+  handlers: 
+          - name: restart apache2
             systemd:
                     name: apache2
                     state: restarted
+
+          - name: unzip wordpress
+            unarchive:
+                    src: /var/www/wordpress.tar.gz
+                    dest: /var/www/
+                    copy: no
+
+          - name: downloading wordpress
+            get_url:
+                    url: https://wordpress.org/latest.tar.gz
+                    dest: /var/www/wordpress.tar.gz
+                    validate_certs: no
+
+          - name: privilages
+            file:
+                    path: /var/www/wordpress/
+                    state: directory
+                    owner: www-data
+                    group: www-data
+                    mode: 0777
+
+
+
+
                    
 
